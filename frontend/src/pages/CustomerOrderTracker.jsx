@@ -1,54 +1,377 @@
-import React from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import React, { useMemo } from 'react';
+import { useLocation, useParams, Link } from 'react-router-dom';
 
 export default function CustomerOrderTracker() {
   const { orderId } = useParams();
   const location = useLocation();
-  const { items = [], total = 0, tableId = 'T12' } = location.state || {};
+
+  // Try to get order from state or localStorage
+  const order = useMemo(() => {
+    if (location.state && location.state.items) {
+      return location.state;
+    }
+    try {
+      const orders = JSON.parse(localStorage.getItem('restaurant_orders') || '[]');
+      const found = orders.find((o) => o.orderId === orderId);
+      if (found) return found;
+    } catch (e) {
+      console.error(e);
+    }
+    return {
+      orderId: orderId || 'ORD1001',
+      tableId: '04',
+      items: [],
+      total: 0,
+      orderStatus: 'RECEIVED',
+      paymentStatus: 'UNPAID',
+    };
+  }, [location.state, orderId]);
+
+  const { items = [], total = 0, tableId = '04', orderStatus = 'RECEIVED' } = order;
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900 flex flex-col items-center pt-12 px-4">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 text-center border border-gray-100 relative overflow-hidden">
-        {/* Background decorative blob */}
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-green-50 rounded-full blur-2xl z-0"></div>
-        
-        <div className="relative z-10">
-          <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-5xl mx-auto mb-6 shadow-sm border-4 border-white">
-            ✅
-          </div>
-          <h1 className="text-3xl font-black mb-1 text-gray-900 tracking-tight">ORDER PLACED</h1>
-          <p className="text-gray-500 mb-8 font-semibold">Order #{orderId}</p>
+    <div style={trackerStyles.container}>
+      <header style={trackerStyles.header}>
+        <Link to={`/table/${tableId}`} style={trackerStyles.backLink}>
+          ← Menu
+        </Link>
+        <span style={trackerStyles.headerTitle}>Order Confirmation</span>
+        <div style={{ width: 60 }} />
+      </header>
 
-          <div className="bg-gray-50 rounded-2xl p-6 text-left mb-8 border border-gray-100">
-             <div className="flex justify-between items-center mb-5 pb-5 border-b border-gray-200">
-               <span className="text-gray-500 font-medium">Table</span>
-               <span className="font-black text-lg bg-white px-3 py-1 rounded-lg border border-gray-100 shadow-sm">{tableId}</span>
-             </div>
-             
-             <div className="space-y-4 mb-5">
-               {items.map(item => (
-                  <div key={item.id} className="flex justify-between text-base items-center">
-                    <span className="font-bold text-gray-800">{item.name} <span className="text-gray-400 font-normal ml-1">×{item.quantity}</span></span>
-                    <span className="text-gray-600 font-medium">₹{item.price * item.quantity}</span>
-                  </div>
-               ))}
-             </div>
-             
-             <div className="flex justify-between pt-5 border-t border-gray-200 font-black text-xl text-gray-900">
-               <span>Total</span>
-               <span>₹{total}</span>
-             </div>
+      <div style={trackerStyles.card}>
+        <div style={trackerStyles.successBadge}>
+          <span style={{ fontSize: '38px' }}>✅</span>
+        </div>
+
+        <h1 style={trackerStyles.title}>ORDER PLACED!</h1>
+        <p style={trackerStyles.subtitle}>
+          The kitchen has received your order and is starting preparation.
+        </p>
+
+        <div style={trackerStyles.metaRow}>
+          <div style={trackerStyles.metaBox}>
+            <span style={trackerStyles.metaLabel}>Order ID</span>
+            <strong style={trackerStyles.metaVal}>#{order.orderId || orderId}</strong>
+          </div>
+          <div style={trackerStyles.metaBox}>
+            <span style={trackerStyles.metaLabel}>Table</span>
+            <strong style={trackerStyles.metaVal}>Table #{tableId}</strong>
+          </div>
+        </div>
+
+        {/* Status Tracker */}
+        <div style={trackerStyles.stepper}>
+          <div style={trackerStyles.stepItem}>
+            <div style={{ ...trackerStyles.stepCircle, backgroundColor: '#16a34a', color: '#fff' }}>✓</div>
+            <span style={trackerStyles.stepLabelActive}>Received</span>
+          </div>
+          <div style={{ ...trackerStyles.stepLine, backgroundColor: '#16a34a' }} />
+          <div style={trackerStyles.stepItem}>
+            <div style={{ ...trackerStyles.stepCircle, backgroundColor: '#f59e0b', color: '#fff' }}>🍳</div>
+            <span style={trackerStyles.stepLabelActive}>Preparing</span>
+          </div>
+          <div style={trackerStyles.stepLine} />
+          <div style={trackerStyles.stepItem}>
+            <div style={trackerStyles.stepCircle}>🍽️</div>
+            <span style={trackerStyles.stepLabel}>Ready</span>
+          </div>
+        </div>
+
+        {/* Order Items Summary */}
+        <div style={trackerStyles.itemsContainer}>
+          <div style={trackerStyles.itemsHeader}>
+            <span>Order Summary</span>
+            <span>{items.reduce((sum, i) => sum + i.quantity, 0)} items</span>
           </div>
 
-          <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 flex items-start text-left gap-3">
-             <div className="text-yellow-600 text-xl mt-0.5">💡</div>
-             <div>
-                <h4 className="font-bold text-yellow-800">Payment Unpaid</h4>
-                <p className="text-sm text-yellow-700 font-medium mt-0.5">Please complete your payment at the counter.</p>
-             </div>
+          <div style={trackerStyles.itemsList}>
+            {items.map((item, index) => (
+              <div key={index} style={trackerStyles.itemRow}>
+                <div style={trackerStyles.itemLeft}>
+                  <span style={trackerStyles.itemQuantity}>{item.quantity}×</span>
+                  <span style={trackerStyles.itemName}>{item.name}</span>
+                </div>
+                <span style={trackerStyles.itemPrice}>₹{item.price * item.quantity}</span>
+              </div>
+            ))}
           </div>
+
+          <div style={trackerStyles.totalRow}>
+            <span>Total Amount</span>
+            <span style={trackerStyles.totalPrice}>₹{total}</span>
+          </div>
+        </div>
+
+        {/* Counter Payment Callout */}
+        <div style={trackerStyles.paymentNotice}>
+          <span style={{ fontSize: '24px' }}>💡</span>
+          <div style={{ textAlign: 'left' }}>
+            <h4 style={trackerStyles.paymentTitle}>Payment Status: UNPAID</h4>
+            <p style={trackerStyles.paymentText}>
+              Please show your Order ID <strong>#{order.orderId || orderId}</strong> and pay at the counter before leaving.
+            </p>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div style={trackerStyles.actionButtons}>
+          <Link to={`/table/${tableId}`} style={trackerStyles.orderMoreBtn}>
+            🍽️ Order More Items
+          </Link>
+          <Link to="/kitchen" style={trackerStyles.viewKitchenBtn}>
+            👨‍🍳 View in Kitchen Display
+          </Link>
         </div>
       </div>
     </div>
   );
 }
+
+const trackerStyles = {
+  container: {
+    minHeight: '100vh',
+    backgroundColor: '#f8fafc',
+    color: '#0f172a',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    padding: '0 16px 40px 16px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  header: {
+    width: '100%',
+    maxWidth: '520px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '16px 0',
+  },
+  backLink: {
+    color: '#0284c7',
+    textDecoration: 'none',
+    fontWeight: '700',
+    fontSize: '14px',
+  },
+  headerTitle: {
+    fontSize: '16px',
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  card: {
+    width: '100%',
+    maxWidth: '520px',
+    backgroundColor: '#ffffff',
+    borderRadius: '24px',
+    border: '1px solid #e2e8f0',
+    padding: '28px 20px',
+    textAlign: 'center',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+  },
+  successBadge: {
+    width: '72px',
+    height: '72px',
+    backgroundColor: '#dcfce7',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: '0 auto 16px auto',
+    boxShadow: '0 0 0 8px #f0fdf4',
+  },
+  title: {
+    margin: '0 0 6px 0',
+    fontSize: '24px',
+    fontWeight: '900',
+    color: '#0f172a',
+    letterSpacing: '-0.5px',
+  },
+  subtitle: {
+    margin: '0 0 20px 0',
+    color: '#64748b',
+    fontSize: '14px',
+  },
+  metaRow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '12px',
+    marginBottom: '24px',
+  },
+  metaBox: {
+    backgroundColor: '#f1f5f9',
+    borderRadius: '12px',
+    padding: '10px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  metaLabel: {
+    fontSize: '11px',
+    color: '#64748b',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  metaVal: {
+    fontSize: '16px',
+    color: '#0f172a',
+    marginTop: '2px',
+  },
+  stepper: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '24px',
+    padding: '0 10px',
+  },
+  stepItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '6px',
+  },
+  stepCircle: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    backgroundColor: '#e2e8f0',
+    color: '#64748b',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: '800',
+    fontSize: '14px',
+  },
+  stepLine: {
+    flex: 1,
+    height: '3px',
+    backgroundColor: '#e2e8f0',
+    margin: '0 8px',
+    marginBottom: '20px',
+  },
+  stepLabelActive: {
+    fontSize: '11px',
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  stepLabel: {
+    fontSize: '11px',
+    fontWeight: '600',
+    color: '#94a3b8',
+  },
+  itemsContainer: {
+    backgroundColor: '#f8fafc',
+    borderRadius: '16px',
+    border: '1px solid #e2e8f0',
+    padding: '16px',
+    marginBottom: '20px',
+    textAlign: 'left',
+  },
+  itemsHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    fontSize: '12px',
+    fontWeight: '700',
+    color: '#64748b',
+    textTransform: 'uppercase',
+    paddingBottom: '10px',
+    borderBottom: '1px solid #e2e8f0',
+    marginBottom: '10px',
+  },
+  itemsList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    marginBottom: '14px',
+  },
+  itemRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    fontSize: '14px',
+  },
+  itemLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  itemQuantity: {
+    backgroundColor: '#e2e8f0',
+    color: '#0f172a',
+    fontWeight: '800',
+    fontSize: '12px',
+    padding: '2px 6px',
+    borderRadius: '4px',
+  },
+  itemName: {
+    fontWeight: '600',
+    color: '#0f172a',
+  },
+  itemPrice: {
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  totalRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: '12px',
+    borderTop: '1px dashed #cbd5e1',
+    fontWeight: '800',
+    fontSize: '16px',
+    color: '#0f172a',
+  },
+  totalPrice: {
+    fontSize: '20px',
+    color: '#16a34a',
+  },
+  paymentNotice: {
+    backgroundColor: '#fefce8',
+    border: '1px solid #fde047',
+    borderRadius: '12px',
+    padding: '14px',
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'flex-start',
+    marginBottom: '24px',
+  },
+  paymentTitle: {
+    margin: 0,
+    fontSize: '14px',
+    fontWeight: '800',
+    color: '#854d0e',
+  },
+  paymentText: {
+    margin: '4px 0 0 0',
+    fontSize: '12px',
+    color: '#a16207',
+    lineHeight: 1.4,
+  },
+  actionButtons: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+  },
+  orderMoreBtn: {
+    backgroundColor: '#0f172a',
+    color: '#ffffff',
+    textDecoration: 'none',
+    padding: '14px',
+    borderRadius: '12px',
+    fontWeight: '800',
+    fontSize: '14px',
+    display: 'block',
+    boxShadow: '0 2px 8px rgba(15,23,42,0.15)',
+  },
+  viewKitchenBtn: {
+    backgroundColor: '#f1f5f9',
+    color: '#0f172a',
+    border: '1px solid #cbd5e1',
+    textDecoration: 'none',
+    padding: '12px',
+    borderRadius: '12px',
+    fontWeight: '700',
+    fontSize: '13px',
+    display: 'block',
+  },
+};
+

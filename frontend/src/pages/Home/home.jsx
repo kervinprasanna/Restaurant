@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import "./home.css";
 
 const menuItems = [
@@ -142,10 +143,12 @@ const menuItems = [
 const categories = ["All", "Starters", "Rice", "Desserts", "Juices"];
 
 export default function Home() {
+  const navigate = useNavigate();
+  const { tableId } = useParams();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState({});
-  const [tableNumber, setTableNumber] = useState("04");
+  const tableNumber = tableId || "04";
 
   // Add item to cart
   const addToCart = (id) => {
@@ -168,6 +171,41 @@ export default function Home() {
     });
   };
 
+  // Navigate to separate Place Order page
+  const goToPlaceOrderPage = (overrideCart = null) => {
+    const currentCart = overrideCart || cart;
+    const cartItemsList = Object.entries(currentCart)
+      .filter(([_, qty]) => qty > 0)
+      .map(([id, qty]) => {
+        const item = menuItems.find((i) => i.id === Number(id));
+        return {
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          category: item.category,
+          type: item.type,
+          quantity: qty,
+        };
+      });
+
+    if (cartItemsList.length === 0) return;
+
+    navigate("/place-order", {
+      state: {
+        cartItems: cartItemsList,
+        tableId: tableNumber,
+      },
+    });
+  };
+
+  // Direct 1-click order for an item
+  const handleDirectItemOrder = (itemId) => {
+    const nextQty = (cart[itemId] || 0) + 1;
+    const nextCart = { ...cart, [itemId]: nextQty };
+    setCart(nextCart);
+    goToPlaceOrderPage(nextCart);
+  };
+
   // Filter items by category & search
   const filteredItems = menuItems.filter((item) => {
     const matchesCategory =
@@ -187,6 +225,15 @@ export default function Home() {
 
   return (
     <div className="menu-page">
+      {/* Top Staff / Role Switcher Banner */}
+      <div className="role-topbar">
+        <span>Views for staff & owners:</span>
+        <div className="role-links">
+          <Link to="/kitchen" className="role-link">👨‍🍳 Kitchen Display</Link>
+          <Link to="/owner" className="role-link">📊 Owner Dashboard</Link>
+        </div>
+      </div>
+
       {/* Top Header */}
       <header className="menu-header">
         <div className="header-brand">
@@ -267,30 +314,40 @@ export default function Home() {
                   <div className="card-footer">
                     <div className="price">₹{item.price}</div>
 
-                    {qty === 0 ? (
-                      <button
-                        className="add-btn"
-                        onClick={() => addToCart(item.id)}
-                      >
-                        + Add
-                      </button>
-                    ) : (
-                      <div className="qty-controls">
-                        <button
-                          className="qty-btn"
-                          onClick={() => removeFromCart(item.id)}
-                        >
-                          −
-                        </button>
-                        <span className="qty-number">{qty}</span>
-                        <button
-                          className="qty-btn"
-                          onClick={() => addToCart(item.id)}
-                        >
-                          +
-                        </button>
-                      </div>
-                    )}
+                    <div className="card-actions">
+                      {qty === 0 ? (
+                        <div className="action-buttons-group">
+                          <button
+                            className="add-btn"
+                            onClick={() => addToCart(item.id)}
+                          >
+                            + Add
+                          </button>
+                          <button
+                            className="order-now-btn"
+                            onClick={() => handleDirectItemOrder(item.id)}
+                          >
+                            Order →
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="qty-controls">
+                          <button
+                            className="qty-btn"
+                            onClick={() => removeFromCart(item.id)}
+                          >
+                            −
+                          </button>
+                          <span className="qty-number">{qty}</span>
+                          <button
+                            className="qty-btn"
+                            onClick={() => addToCart(item.id)}
+                          >
+                            +
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -310,12 +367,13 @@ export default function Home() {
           </div>
           <button
             className="checkout-btn"
-            onClick={() => alert(`Order placed for Table #${tableNumber}! Total: ₹${totalPrice}`)}
+            onClick={() => goToPlaceOrderPage()}
           >
-            Place Order →
+            Review & Place Order →
           </button>
         </div>
       )}
     </div>
   );
 }
+

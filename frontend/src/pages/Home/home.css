@@ -359,3 +359,58 @@
     border-right: 1px solid #e2e8f0;
   }
 }
+
+/* Role / Switcher Bar */
+.role-topbar {
+  background: #0f172a;
+  color: #94a3b8;
+  font-size: 12px;
+  padding: 6px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.role-links {
+  display: flex;
+  gap: 12px;
+}
+
+.role-link {
+  color: #38bdf8;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s;
+}
+
+.role-link:hover {
+  color: #7dd3fc;
+  text-decoration: underline;
+}
+
+/* Card Actions */
+.action-buttons-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.order-now-btn {
+  background: #f1f5f9;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.order-now-btn:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+

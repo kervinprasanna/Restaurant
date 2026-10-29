@@ -88,14 +88,14 @@ const menuItems = [
     type: "veg",
     desc: "Rich warm fudge brownie served with melted chocolate sauce.",
   },
-  {
-    id: 11,
-    name: "Rasmalai",
-    category: "Desserts",
-    price: 90,
-    type: "veg",
-    desc: "Soft cottage cheese discs soaked in sweetened saffron-cardamom milk.",
-  },
+  // {
+  //   id: 11,
+  //   name: "Rasmalai",
+  //   category: "Desserts",
+  //   price: 90,
+  //   type: "veg",
+  //   desc: "Soft cottage cheese discs soaked in sweetened saffron-cardamom milk.",
+  // },
   {
     id: 12,
     name: "Ice Cream Scoop",
